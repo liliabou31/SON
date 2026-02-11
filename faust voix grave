@@ -1,0 +1,54 @@
+import("stdfaust.lib");
+
+fmin = 80;
+fmax = 1000;
+
+// On booste le signal X10 uniquement pour l'analyseur
+// pour qu'il détecte la note sans avoir à crier
+preamp(sig) = sig * 10;
+
+analyze(input) = input : preamp : fi.lowpass(2,800) : fi.highpass(2,80) : an.pitchTracker(fmin, fmax);
+
+wrap12(d) = d - 12*(d > 6) + 12*(d < -6);
+myabs(x) = (x >= 0) * x + (x < 0) * (-x);
+best(a,b) = select2(myabs(a) < myabs(b), a, b);
+
+// Do majeur : 0,2,4,5,7,9,11
+quantizeCmaj(m) = m + delta with {
+  oct = floor(m/12);
+  pc  = m - 12*oct;
+
+  d0  = wrap12(0  - pc);
+  d2  = wrap12(2  - pc);
+  d4  = wrap12(4  - pc);
+  d5  = wrap12(5  - pc);
+  d7  = wrap12(7  - pc);
+  d9  = wrap12(9  - pc);
+  d11 = wrap12(11 - pc);
+
+  delta = best(best(best(d0,d2),best(d4,d5)),
+               best(best(d7,d9),d11));
+};
+
+autotune_logic(p) = correction
+with {
+    freq = ma.SR / max(1, p);
+    current_note = 12 * ma.log2(freq / 440.0) + 69;
+    target_note = quantizeCmaj(current_note);
+    correction = (target_note - current_note) : si.smooth(0.95);
+};
+
+transpose(w, x, s, sig) =
+	de.fdelay(maxDelay, d, sig)*ma.fmin(d/x, 1) +
+	de.fdelay(maxDelay, d+w, sig)*(1-ma.fmin(d/x, 1))
+with {
+	maxDelay = 1024; // Modifié de 65536 à 1024 pour économiser la RAM
+	i = 1 - pow(2, s/12.0);
+	d = (+(i) : fmod(_, w)) ~ _;
+};
+
+process(sig) = transpose(1024, 512, s, sig)
+with {
+  s = analyze(sig) : autotune_logic;
+};
+
