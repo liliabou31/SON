@@ -25,4 +25,4 @@ with {
 	d = (+(i) : fmod(_, 1024)) ~ _;
 };
 
-process = _ <: (analyze : autotune_logic), _ : transpose(1024, 512) : *(0.8);
+process = _ : transpose(1024, 512, 7) : *(0.8);
