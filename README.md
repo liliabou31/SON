@@ -5,8 +5,9 @@ import("stdfaust.lib");
 fmin = 80;
 
 fmax = 1000;
-// On crée un signal filtré pour aider la détection
+
 analyze(input) = input : fi.lowpass(2,1200) : an.pitchTracker(fmin, fmax);
+
 autotune_logic(p) = correction
     with {
     // change une freq en numéro MIDI et renvoie la correction (pour transpose)
@@ -15,8 +16,7 @@ autotune_logic(p) = correction
     target_note = ba.hz2midikey(freq);
     correction = (target_note - current_note) : si.smooth(0.999);
     };
-// Ta version adaptée pour la RAM de la Teensy
-// w = window (ex: 512), x = crossfade (ex: 256), s = semitones, sig = entrée
+	
 transpose(w, x, s, sig) =
 	de.fdelay(maxDelay, d, sig)*ma.fmin(d/x, 1) +
 	de.fdelay(maxDelay, d+w, sig)*(1-ma.fmin(d/x, 1))
@@ -25,4 +25,5 @@ with {
 	i = 1 - pow(2, s/12.0);
 	d = (+(i) : fmod(_,w)) ~ _;
 };
+
 process = _ <: (analyze : autotune_logic), _ : transpose(2048, 1024);
