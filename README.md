@@ -1,4 +1,8 @@
 # SON
+
+## A PAS OUBLIER A METTRE DANS LE README
+
+pour l'affichage, il faut installer processing via : https://processing.org/download (Windows)
 code FAUST 
 
 import("stdfaust.lib");
