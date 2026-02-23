@@ -1,30 +1,33 @@
-#include <Audio.h> // traitement du son
-#include <Wire.h> // protocoles de communication avec le teensy
-#include <SPI.h> // ``                ``
-// #include <SD.h> // traitement de fichier audio
-// #include <SerialFlash.h> // ``         ``
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
 #include "midi_note.h"
+#include "Autotune_final.h" // Ton export Faust
 
 #define FREQ_THRESHOLD 0.8
 
-// Systeme audio 
+// Système audio 
+AudioInputI2S            i2s1;
+AudioMixer4              mixer1;
+Autotune_final           Autotune;   // Ton effet Faust
+AudioAnalyzeNoteFrequency notefreq1; 
+AudioAmplifier           amp1;
+AudioOutputI2S           i2s2;
 
-AudioInputI2S            i2s1; // entrée micro
-AudioMixer4              mixer1; // mélange les canaux
-AudioEffectGranular      granular1; // change la hauteur
-AudioAnalyzeNoteFrequency notefreq1; // detecte la frequence dominante
-AudioAmplifier           amp1; // ajuste le volume 
-AudioOutputI2S           i2s2; // sortie audio 
+// Connexions corrigées
+AudioConnection          patch1(i2s1, 0, mixer1, 0);
+AudioConnection          patch2(i2s1, 1, mixer1, 1);
 
-AudioConnection          patchCord1(i2s1, 0, mixer1, 0); // PC → Teensy (L)
-AudioConnection          patchCord2(i2s1, 1, mixer1, 1); // PC → Teensy (R)
-AudioConnection          patchCord3(mixer1, granular1); // vers pitch shift
-AudioConnection          patchCord4(mixer1, notefreq1); // vers analyse pitch
-AudioConnection          patchCord5(granular1, amp1);
-AudioConnection          patchCord6(amp1, 0, i2s2, 0); // Teensy → PC (L)
-AudioConnection          patchCord7(amp1, 0, i2s2, 1); // Teensy → PC (R)
+// Le son part vers l'analyseur ET vers l'effet Faust
+AudioConnection          patch3(mixer1, 0, notefreq1, 0); 
+AudioConnection          patch4(mixer1, 0, Autotune, 0); 
 
-AudioControlSGTL5000     sgtl5000_1; // "pont de communication" entre le code et la puce physique
+// La sortie de l'effet Faust va vers l'ampli, puis vers les HP
+AudioConnection          patch5(Autotune, 0, amp1, 0);
+AudioConnection          patch6(amp1, 0, i2s2, 0);
+AudioConnection          patch7(amp1, 0, i2s2, 1);
+
+AudioControlSGTL5000     sgtl5000_1;
 
 // Granular memory
 
@@ -94,34 +97,15 @@ float findClosestMIDINote(float freq) {
 // main loop
 
 void loop() {
-  // Fréquence mesurée depuis le micro
   float f_mes = getPeakFreq();
+  if (f_mes <= 0.0) return;
 
-  if (f_mes <= 0.0)
-    return;   // = si aucune fréquence fiable 
-
-  // Trouver la note MIDI la plus proche
   float f_des = findClosestMIDINote(f_mes);
-
   float f_ratio = f_des / f_mes;
 
-  // Sécurité : empeche des deformations extremes → peut etre le commenter pour vois ce que ça fait? 
-  if (f_ratio < 0.25) f_ratio = 0.25;
-  if (f_ratio > 4.0)  f_ratio = 4.0;
-
-  granular1.setSpeed(f_ratio); // application de l'autotune
-
-  // Debug
-  //Serial.print("Mesurée: ");
-  //Serial.print(f_mes);
-  //Serial.print(" | Cible: ");
-  //Serial.print(f_des);
-  //Serial.print(" | Ratio: ");
-  //Serial.println(f_ratio);
-
-  Serial.print(f_mes);
-  Serial.print(",");
-  Serial.println(f_des);
+  // C'est ici que tu envoies le ratio à Faust !
+  // "ratio" correspond au nom que tu as donné dans nentry("ratio", ...)
+  myAutotune.setParamValue("ratio", f_ratio);
 
   delay(10);
 }
