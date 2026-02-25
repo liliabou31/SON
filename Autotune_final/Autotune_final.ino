@@ -1,45 +1,60 @@
 #include <Audio.h> // traitement du son
 #include <Wire.h> // protocoles de communication avec le teensy
 #include <SPI.h> // ``                ``
+
 #include "midi_note.h"
 
-#define FREQ_THRESHOLD 0.9
+#define FREQ_THRESHOLD 0.8
 
 // Systeme audio 
 
 // Sortie micro/casque
 
-// AudioInputI2S            i2s1; // entrée micro
-// AudioMixer4              mixer1; // mélange les canaux
-// AudioEffectGranular      granular1; // change la hauteur
-// AudioAnalyzeNoteFrequency notefreq1; // detecte la frequence dominante
-// AudioAmplifier           amp1; // ajuste le volume 
-// AudioOutputI2S           i2s2; // sortie audio 
+AudioInputI2S            i2s1; // entrée micro
+AudioMixer4              mixer1; // mélange les canaux
+AudioEffectGranular      granular1; // change la hauteur
+AudioAnalyzeNoteFrequency notefreq1; // detecte la frequence dominante
+AudioAmplifier           amp1; // ajuste le volume 
+AudioOutputI2S           i2s2; // sortie audio 
+AudioEffectDelay         delay1 ;
+AudioMixer4              mixer2; 
 
-// AudioConnection          patchCord1(i2s1, 0, mixer1, 0); // PC → Teensy (L)
-// AudioConnection          patchCord2(i2s1, 1, mixer1, 1); // PC → Teensy (R)
-// AudioConnection          patchCord3(mixer1, granular1); // vers pitch shift
-// AudioConnection          patchCord4(mixer1, notefreq1); // vers analyse pitch
-// AudioConnection          patchCord5(granular1, amp1);
+AudioConnection          patchCord1(i2s1, 0, mixer1, 0); // PC → Teensy (L)
+AudioConnection          patchCord2(i2s1, 1, mixer1, 1); // PC → Teensy (R)
+AudioConnection          patchCord3(mixer1, granular1); // vers pitch shift
+AudioConnection          patchCord4(mixer1, notefreq1); // vers analyse pitch
+AudioConnection          patchCord5(granular1, amp1);
 // AudioConnection          patchCord6(amp1, 0, i2s2, 0); // Teensy → PC (L)
 // AudioConnection          patchCord7(amp1, 0, i2s2, 1); // Teensy → PC (R)
+AudioConnection          patchCord8(amp1, 0, delay1, 0); 
+AudioConnection          patchCord9(delay1, 0, mixer2, 1);
+AudioConnection          patchCord10(amp1, 0, mixer2, 0);
+AudioConnection          patchCord11(mixer2, 0, i2s2, 0);
+AudioConnection          patchCord12(mixer2, 0, i2s2, 1);
 
 // Sortie PC
 
-AudioInputUSB            usbIn;
-AudioMixer4              mixer1;
-AudioEffectGranular      granular1;
-AudioAnalyzeNoteFrequency notefreq1;
-AudioAmplifier           amp1;
-AudioOutputUSB           usbOut;
+// AudioInputUSB            usbIn;
+// AudioMixer4              mixer1;
+// AudioEffectGranular      granular1;
+// AudioAnalyzeNoteFrequency notefreq1;
+// AudioAmplifier           amp1;
+// AudioOutputUSB           usbOut;
+// AudioEffectDelay         delay1 ;
+// AudioMixer4              mixer2; 
 
-AudioConnection patchCord1(usbIn, 0, mixer1, 0); // PC → Teensy (L)
-AudioConnection patchCord2(usbIn, 1, mixer1, 1); // PC → Teensy (R)
-AudioConnection patchCord3(mixer1, granular1);   // vers pitch shift
-AudioConnection patchCord4(mixer1, notefreq1);   // vers analyse pitch
-AudioConnection patchCord5(granular1, amp1);
-AudioConnection patchCord6(amp1, 0, usbOut, 0);  // Teensy → PC (L)
-AudioConnection patchCord7(amp1, 0, usbOut, 1);  // Teensy → PC (R)
+// AudioConnection          patchCord1(usbIn, 0, mixer1, 0); // PC → Teensy (L)
+// AudioConnection          patchCord2(usbIn, 1, mixer1, 1); // PC → Teensy (R)
+// AudioConnection          patchCord3(mixer1, granular1); // vers pitch shift
+// AudioConnection          patchCord4(mixer1, notefreq1); // vers analyse pitch
+// AudioConnection          patchCord5(granular1, amp1);
+// // AudioConnection          patchCord6(amp1, 0, i2s2, 0); // Teensy → PC (L)
+// // AudioConnection          patchCord7(amp1, 0, i2s2, 1); // Teensy → PC (R)
+// AudioConnection          patchCord8(amp1, 0, delay1, 0); 
+// AudioConnection          patchCord9(delay1, 0, mixer2, 1);
+// AudioConnection          patchCord10(amp1, 0, mixer2, 0);
+// AudioConnection          patchCord11(mixer2, 0, usbOut, 0);
+// AudioConnection          patchCord12(mixer2, 0, usbOut, 1);
 
 AudioControlSGTL5000     sgtl5000_1; // "pont de communication" entre le code et la puce physique
 
@@ -54,7 +69,6 @@ float freq_out = 440.0;   // fréquence cible par défaut (La 440)
 float last_valid_freq = -1.0;
 
 // setup 
-
 void setup() {
   Serial.begin(115200);
   AudioMemory(256);
@@ -67,8 +81,12 @@ void setup() {
   mixer1.gain(0, 0.5);   // mélange des deux canaux
   mixer1.gain(1, 0.5);
 
+  delay1.delay(0, 80);
+  mixer2.gain(0, 1.0);
+  mixer2.gain(1, 0.4);
+
   granular1.begin(granularMemory, GRANULAR_MEMORY_SIZE);
-  granular1.beginPitchShift(200); // taille des grains en ms
+  granular1.beginPitchShift(45); // taille des grains en ms
   notefreq1.begin(FREQ_THRESHOLD);
 
   Serial.println("Le système est prêt");
