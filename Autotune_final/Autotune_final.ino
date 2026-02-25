@@ -1,36 +1,31 @@
-#include <Audio.h> // traitement du son
-#include <Wire.h> // protocoles de communication avec le teensy
-#include <SPI.h> // ``                ``
-
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
 #include "midi_note.h"
+#include "Autotune_final.h" // Ton export Faust
 
 #define FREQ_THRESHOLD 0.8
 
-// Systeme audio 
+// Système audio 
+AudioInputI2S            i2s1;
+AudioMixer4              mixer1;
+Autotune_final       Autotune;   // Ton effet Faust
+AudioAnalyzeNoteFrequency notefreq1; 
+AudioAmplifier           amp1;
+AudioOutputI2S           i2s2;
 
-// Sortie micro/casque
+// Connexions corrigées
+AudioConnection          patch1(i2s1, 0, mixer1, 0);
+AudioConnection          patch2(i2s1, 1, mixer1, 1);
 
-AudioInputI2S            i2s1; // entrée micro
-AudioMixer4              mixer1; // mélange les canaux
-AudioEffectGranular      granular1; // change la hauteur
-AudioAnalyzeNoteFrequency notefreq1; // detecte la frequence dominante
-AudioAmplifier           amp1; // ajuste le volume 
-AudioOutputI2S           i2s2; // sortie audio 
-AudioEffectDelay         delay1 ;
-AudioMixer4              mixer2; 
+// Le son part vers l'analyseur ET vers l'effet Faust
+AudioConnection          patch3(mixer1, 0, notefreq1, 0); 
+AudioConnection          patch4(mixer1, 0, Autotune, 0); 
 
-AudioConnection          patchCord1(i2s1, 0, mixer1, 0); // PC → Teensy (L)
-AudioConnection          patchCord2(i2s1, 1, mixer1, 1); // PC → Teensy (R)
-AudioConnection          patchCord3(mixer1, granular1); // vers pitch shift
-AudioConnection          patchCord4(mixer1, notefreq1); // vers analyse pitch
-AudioConnection          patchCord5(granular1, amp1);
-// AudioConnection          patchCord6(amp1, 0, i2s2, 0); // Teensy → PC (L)
-// AudioConnection          patchCord7(amp1, 0, i2s2, 1); // Teensy → PC (R)
-AudioConnection          patchCord8(amp1, 0, delay1, 0); 
-AudioConnection          patchCord9(delay1, 0, mixer2, 1);
-AudioConnection          patchCord10(amp1, 0, mixer2, 0);
-AudioConnection          patchCord11(mixer2, 0, i2s2, 0);
-AudioConnection          patchCord12(mixer2, 0, i2s2, 1);
+// La sortie de l'effet Faust va vers l'ampli, puis vers les HP
+AudioConnection          patch5(Autotune, 0, amp1, 0);
+AudioConnection          patch6(amp1, 0, i2s2, 0);
+AudioConnection          patch7(amp1, 0, i2s2, 1);
 
 // Sortie PC
 
@@ -76,17 +71,11 @@ void setup() {
   sgtl5000_1.enable();
   sgtl5000_1.inputSelect(AUDIO_INPUT_MIC);  // Activation du micro
   sgtl5000_1.micGain(40);                   // Ajuste le gain du micro (0-63)
-  sgtl5000_1.volume(0.4);
+  sgtl5000_1.volume(0.25);
 
   mixer1.gain(0, 0.5);   // mélange des deux canaux
   mixer1.gain(1, 0.5);
 
-  delay1.delay(0, 80);
-  mixer2.gain(0, 1.0);
-  mixer2.gain(1, 0.4);
-
-  granular1.begin(granularMemory, GRANULAR_MEMORY_SIZE);
-  granular1.beginPitchShift(45); // taille des grains en ms
   notefreq1.begin(FREQ_THRESHOLD);
 
   Serial.println("Le système est prêt");
@@ -126,19 +115,12 @@ float findClosestMIDINote(float freq) {
   return targetFreq;
 }
 
-float round3(float x)
-{
-  return roundf(x*1000.0f)/1000.0f;
-}
 // main loop
-
-float f_ratio_filtre = 1.0;
 int cpt = 0;
 
 void loop() {
   // Fréquence mesurée depuis le micro
   float f_mes = getPeakFreq();
-  
 
   if (f_mes <= 0.0)
     return;   // = si aucune fréquence fiable 
@@ -148,14 +130,7 @@ void loop() {
 
   float f_ratio_cible = f_des / f_mes;
 
-  // Sécurité : empeche des deformations extremes → peut etre le commenter pour vois ce que ça fait? 
-  // if (f_ratio_cible < 0.5) f_ratio_cible = 0.5;
-  // if (f_ratio_cible > 2.0) f_ratio_cible = 2.0;
-
-  // f_ratio_filtre = (f_ratio_filtre * 0.9) + (f_ratio_cible * 0.1);
-
-  granular1.setSpeed(round3(f_ratio_cible)); // application de l'autotune
-  Serial.println(f_ratio_cible);
+  Autotune.setParamValue("ratio", f_ratio_cible);
 
   // Debug
   //Serial.print("Mesurée: ");
@@ -164,17 +139,18 @@ void loop() {
   //Serial.print(f_des);
   //Serial.print(" | Ratio: ");
   //Serial.println(f_ratio);
-  if (cpt == 0){
+  if (cpt == 0)
+  {
     Serial.print(f_mes);
     Serial.print(",");
     Serial.println(f_des);
   }
-  if (cpt == 9) {
-    cpt = 0; 
+  if (cpt == 9)
+  {
+    cpt = 0;
   }
-  else {
+  else{
     cpt = cpt + 1;
   }
-
   delay(1);
 }
