@@ -35,10 +35,8 @@ AudioOutputUSB           usbOut;
 
 AudioConnection patchCord1(usbIn, 0, mixer1, 0); // PC → Teensy (L)
 AudioConnection patchCord2(usbIn, 1, mixer1, 1); // PC → Teensy (R)
-
 AudioConnection patchCord3(mixer1, granular1);   // vers pitch shift
 AudioConnection patchCord4(mixer1, notefreq1);   // vers analyse pitch
-
 AudioConnection patchCord5(granular1, amp1);
 AudioConnection patchCord6(amp1, 0, usbOut, 0);  // Teensy → PC (L)
 AudioConnection patchCord7(amp1, 0, usbOut, 1);  // Teensy → PC (R)
