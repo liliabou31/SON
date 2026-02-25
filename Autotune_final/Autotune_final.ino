@@ -76,7 +76,7 @@ void setup() {
   sgtl5000_1.enable();
   sgtl5000_1.inputSelect(AUDIO_INPUT_MIC);  // Activation du micro
   sgtl5000_1.micGain(40);                   // Ajuste le gain du micro (0-63)
-  sgtl5000_1.volume(0.25);
+  sgtl5000_1.volume(0.4);
 
   mixer1.gain(0, 0.5);   // mélange des deux canaux
   mixer1.gain(1, 0.5);
@@ -126,13 +126,19 @@ float findClosestMIDINote(float freq) {
   return targetFreq;
 }
 
+float round3(float x)
+{
+  return roundf(x*1000.0f)/1000.0f;
+}
 // main loop
 
 float f_ratio_filtre = 1.0;
+int cpt = 0;
 
 void loop() {
   // Fréquence mesurée depuis le micro
   float f_mes = getPeakFreq();
+  
 
   if (f_mes <= 0.0)
     return;   // = si aucune fréquence fiable 
@@ -143,12 +149,13 @@ void loop() {
   float f_ratio_cible = f_des / f_mes;
 
   // Sécurité : empeche des deformations extremes → peut etre le commenter pour vois ce que ça fait? 
-  if (f_ratio_cible < 0.5) f_ratio_cible = 0.5;
-  if (f_ratio_cible > 2.0) f_ratio_cible = 2.0;
+  // if (f_ratio_cible < 0.5) f_ratio_cible = 0.5;
+  // if (f_ratio_cible > 2.0) f_ratio_cible = 2.0;
 
-  f_ratio_filtre = (f_ratio_filtre * 0.9) + (f_ratio_cible * 0.1);
+  // f_ratio_filtre = (f_ratio_filtre * 0.9) + (f_ratio_cible * 0.1);
 
-  granular1.setSpeed(f_ratio_filtre); // application de l'autotune
+  granular1.setSpeed(round3(f_ratio_cible)); // application de l'autotune
+  Serial.println(f_ratio_cible);
 
   // Debug
   //Serial.print("Mesurée: ");
@@ -157,10 +164,17 @@ void loop() {
   //Serial.print(f_des);
   //Serial.print(" | Ratio: ");
   //Serial.println(f_ratio);
+  if (cpt == 0){
+    Serial.print(f_mes);
+    Serial.print(",");
+    Serial.println(f_des);
+  }
+  if (cpt == 9) {
+    cpt = 0; 
+  }
+  else {
+    cpt = cpt + 1;
+  }
 
-  Serial.print(f_mes);
-  Serial.print(",");
-  Serial.println(f_des);
-
-  delay(10);
+  delay(1);
 }
