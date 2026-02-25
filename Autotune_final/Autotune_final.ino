@@ -13,6 +13,8 @@ Autotune_final       Autotune;   // Ton effet Faust
 AudioAnalyzeNoteFrequency notefreq1; 
 AudioAmplifier           amp1;
 AudioOutputI2S           i2s2;
+AudioEffectDelay delay1;
+AudioMixer4      mixer2;
 
 // Connexions corrigées
 AudioConnection          patch1(i2s1, 0, mixer1, 0);
@@ -24,8 +26,11 @@ AudioConnection          patch4(mixer1, 0, Autotune, 0);
 
 // La sortie de l'effet Faust va vers l'ampli, puis vers les HP
 AudioConnection          patch5(Autotune, 0, amp1, 0);
-AudioConnection          patch6(amp1, 0, i2s2, 0);
-AudioConnection          patch7(amp1, 0, i2s2, 1);
+AudioConnection          atch8(amp1, 0, delay1, 0);
+AudioConnection          patch9(delay1, 0, mixer2, 1);
+AudioConnection          patch10(amp1, 0, mixer2, 0);
+AudioConnection          patch11(mixer2, 0, i2s2, 0);
+AudioConnection          patch12(mixer2, 0, i2s2, 1);
 
 // Sortie PC
 
@@ -71,12 +76,16 @@ void setup() {
   sgtl5000_1.enable();
   sgtl5000_1.inputSelect(AUDIO_INPUT_MIC);  // Activation du micro
   sgtl5000_1.micGain(40);                   // Ajuste le gain du micro (0-63)
-  sgtl5000_1.volume(0.25);
+  sgtl5000_1.volume(0.4);
 
   mixer1.gain(0, 0.5);   // mélange des deux canaux
   mixer1.gain(1, 0.5);
 
   notefreq1.begin(FREQ_THRESHOLD);
+
+  delay1.delay(0, 60);   // 80ms = effet robot
+  mixer2.gain(0, 1.0);   // voix directe
+  mixer2.gain(1, 0.3);   // echo discret
 
   Serial.println("Le système est prêt");
 }
@@ -139,18 +148,18 @@ void loop() {
   //Serial.print(f_des);
   //Serial.print(" | Ratio: ");
   //Serial.println(f_ratio);
-  if (cpt == 0)
-  {
+  //if (cpt == 0)
+  //{
     Serial.print(f_mes);
     Serial.print(",");
     Serial.println(f_des);
-  }
-  if (cpt == 9)
-  {
-    cpt = 0;
-  }
-  else{
-    cpt = cpt + 1;
-  }
+  // }
+  // if (cpt == 9)
+  // {
+  //   cpt = 0;
+  // }
+  // else{
+  //   cpt = cpt + 1;
+  // }
   delay(1);
 }
