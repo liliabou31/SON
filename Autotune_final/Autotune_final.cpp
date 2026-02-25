@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------
-name: "Autotune"
+name: "Autotune_final"
 Code generated with Faust 2.81.10 (https://faust.grame.fr)
 Compilation options: -a /usr/local/share/faust/teensy/teensy.cpp -lang cpp -i -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -uim -single -ftz 0
 ------------------------------------------------------------ */
@@ -44,7 +44,7 @@ Compilation options: -a /usr/local/share/faust/teensy/teensy.cpp -lang cpp -i -c
 
 #include <string.h> // for memset
 
-#include "Autotune.h"
+#include "Autotune_final.h"
 
 // IMPORTANT: in order for MapUI to work, the teensy linker must be g++
 /************************** BEGIN MapUI.h ******************************
@@ -10333,10 +10333,10 @@ struct dsp_poly_factory : public dsp_factory {
 
 struct mydsp : public dsp {
 	
-	int iVec0[2];
+	FAUSTFLOAT fHslider0;
 	float fRec0[2];
 	int IOTA0;
-	float fVec1[2048];
+	float fVec0[2048];
 	int fSampleRate;
 	
 	mydsp() {
@@ -10346,17 +10346,13 @@ struct mydsp : public dsp {
 		m->declare("compile_options", "-a /usr/local/share/faust/teensy/teensy.cpp -lang cpp -i -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -uim -single -ftz 0");
 		m->declare("delays.lib/name", "Faust Delay Library");
 		m->declare("delays.lib/version", "1.2.0");
-		m->declare("filename", "Autotune.dsp");
+		m->declare("filename", "Autotune_final.dsp");
 		m->declare("maths.lib/author", "GRAME");
 		m->declare("maths.lib/copyright", "GRAME");
 		m->declare("maths.lib/license", "LGPL with exception");
 		m->declare("maths.lib/name", "Faust Math Library");
 		m->declare("maths.lib/version", "2.9.0");
-		m->declare("name", "Autotune");
-		m->declare("oscillators.lib/name", "Faust Oscillator Library");
-		m->declare("oscillators.lib/version", "1.6.0");
-		m->declare("platform.lib/name", "Generic Platform Library");
-		m->declare("platform.lib/version", "1.3.0");
+		m->declare("name", "Autotune_final");
 	}
 
 	virtual int getNumInputs() {
@@ -10374,18 +10370,16 @@ struct mydsp : public dsp {
 	}
 	
 	virtual void instanceResetUserInterface() {
+		fHslider0 = static_cast<FAUSTFLOAT>(1.0f);
 	}
 	
 	virtual void instanceClear() {
 		for (int l0 = 0; l0 < 2; l0 = l0 + 1) {
-			iVec0[l0] = 0;
-		}
-		for (int l1 = 0; l1 < 2; l1 = l1 + 1) {
-			fRec0[l1] = 0.0f;
+			fRec0[l0] = 0.0f;
 		}
 		IOTA0 = 0;
-		for (int l2 = 0; l2 < 2048; l2 = l2 + 1) {
-			fVec1[l2] = 0.0f;
+		for (int l1 = 0; l1 < 2048; l1 = l1 + 1) {
+			fVec0[l1] = 0.0f;
 		}
 	}
 	
@@ -10409,28 +10403,26 @@ struct mydsp : public dsp {
 	}
 	
 	virtual void buildUserInterface(UI* ui_interface) {
-		ui_interface->openVerticalBox("Autotune");
+		ui_interface->openVerticalBox("Autotune_final");
+		ui_interface->addHorizontalSlider("ratio", &fHslider0, FAUSTFLOAT(1.0f), FAUSTFLOAT(0.5f), FAUSTFLOAT(2.0f), FAUSTFLOAT(0.001f));
 		ui_interface->closeBox();
 	}
 	
 	virtual void compute(int count, FAUSTFLOAT** RESTRICT inputs, FAUSTFLOAT** RESTRICT outputs) {
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* output0 = outputs[0];
+		float fSlow0 = std::pow(2.0f, 0.083333336f * static_cast<float>(fHslider0));
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			iVec0[0] = 1;
-			float fTemp0 = ((1 - iVec0[1]) ? 0.0f : fRec0[1]);
-			fRec0[0] = fTemp0 - std::floor(fTemp0);
-			float fTemp1 = 2048.0f * fRec0[0];
-			float fTemp2 = std::max<float>(0.0f, std::min<float>(4.0f * fRec0[0], 1.0f) * (1.0f - std::min<float>(0.001953125f * (fTemp1 + -1536.0f), 1.0f)));
+			fRec0[0] = std::fmod(fRec0[1] + 2057.0f - fSlow0, 2056.0f);
+			float fTemp0 = std::min<float>(0.0009765625f * fRec0[0], 1.0f);
+			float fTemp1 = fRec0[0] + 2056.0f;
+			float fTemp2 = std::floor(fTemp1);
 			float fTemp3 = static_cast<float>(input0[i0]);
-			fVec1[IOTA0 & 2047] = fTemp3;
-			float fTemp4 = std::fmod(fTemp1 + 1024.0f, 2048.0f);
-			int iTemp5 = static_cast<int>(fTemp4);
-			float fTemp6 = std::floor(fTemp4);
-			int iTemp7 = static_cast<int>(fTemp1);
-			float fTemp8 = std::floor(fTemp1);
-			output0[i0] = static_cast<FAUSTFLOAT>((fVec1[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp7))) & 2047] * (fTemp8 + (1.0f - fTemp1)) + (fTemp1 - fTemp8) * fVec1[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp7 + 1))) & 2047]) * fTemp2 + (fVec1[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp5))) & 2047] * (fTemp6 + (1.0f - fTemp4)) + (fTemp4 - fTemp6) * fVec1[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp5 + 1))) & 2047]) * (1.0f - fTemp2));
-			iVec0[1] = iVec0[0];
+			fVec0[IOTA0 & 2047] = fTemp3;
+			int iTemp4 = static_cast<int>(fTemp1);
+			int iTemp5 = static_cast<int>(fRec0[0]);
+			float fTemp6 = std::floor(fRec0[0]);
+			output0[i0] = static_cast<FAUSTFLOAT>((fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp5))) & 2047] * (fTemp6 + (1.0f - fRec0[0])) + (fRec0[0] - fTemp6) * fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp5 + 1))) & 2047]) * fTemp0 + (fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp4))) & 2047] * (fTemp2 + (-2055.0f - fRec0[0])) + fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp4 + 1))) & 2047] * (fRec0[0] + (2056.0f - fTemp2))) * (1.0f - fTemp0));
 			fRec0[1] = fRec0[0];
 			IOTA0 = IOTA0 + 1;
 		}
@@ -10440,16 +10432,18 @@ struct mydsp : public dsp {
 
 #ifdef FAUST_UIMACROS
 	
-	#define FAUST_FILE_NAME "Autotune.dsp"
+	#define FAUST_FILE_NAME "Autotune_final.dsp"
 	#define FAUST_CLASS_NAME "mydsp"
 	#define FAUST_COMPILATION_OPIONS "-a /usr/local/share/faust/teensy/teensy.cpp -lang cpp -i -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -uim -single -ftz 0"
 	#define FAUST_INPUTS 1
 	#define FAUST_OUTPUTS 1
-	#define FAUST_ACTIVES 0
+	#define FAUST_ACTIVES 1
 	#define FAUST_PASSIVES 0
 
+	FAUST_ADDHORIZONTALSLIDER("ratio", fHslider0, 1.0f, 0.5f, 2.0f, 0.001f);
 
 	#define FAUST_LIST_ACTIVES(p) \
+		p(HORIZONTALSLIDER, ratio, "ratio", fHslider0, 1.0f, 0.5f, 2.0f, 0.001f) \
 
 	#define FAUST_LIST_PASSIVES(p) \
 
@@ -10471,7 +10465,7 @@ std::list<GUI*> GUI::fGuiList;
 ztimedmap GUI::gTimedZoneMap;
 #endif
 
-Autotune::Autotune() : AudioStream(FAUST_INPUTS, new audio_block_t*[FAUST_INPUTS])
+Autotune_final::Autotune_final() : AudioStream(FAUST_INPUTS, new audio_block_t*[FAUST_INPUTS])
 {
 #ifdef NVOICES
     int nvoices = NVOICES;
@@ -10513,7 +10507,7 @@ Autotune::Autotune() : AudioStream(FAUST_INPUTS, new audio_block_t*[FAUST_INPUTS
 #endif
 }
 
-Autotune::~Autotune()
+Autotune_final::~Autotune_final()
 {
     delete fDSP;
     delete fUI;
@@ -10532,7 +10526,7 @@ Autotune::~Autotune()
 }
 
 template <int INPUTS, int OUTPUTS>
-void Autotune::updateImp(void)
+void Autotune_final::updateImp(void)
 {
 #if MIDICTRL
     // Process the MIDI messages received by the Teensy
@@ -10573,14 +10567,14 @@ void Autotune::updateImp(void)
     }
 }
 
-void Autotune::update(void) { updateImp<FAUST_INPUTS, FAUST_OUTPUTS>(); }
+void Autotune_final::update(void) { updateImp<FAUST_INPUTS, FAUST_OUTPUTS>(); }
 
-void Autotune::setParamValue(const std::string& path, float value)
+void Autotune_final::setParamValue(const std::string& path, float value)
 {
     fUI->setParamValue(path, value);
 }
 
-float Autotune::getParamValue(const std::string& path)
+float Autotune_final::getParamValue(const std::string& path)
 {
     return fUI->getParamValue(path);
 }
