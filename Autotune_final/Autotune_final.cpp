@@ -10336,7 +10336,7 @@ struct mydsp : public dsp {
 	FAUSTFLOAT fHslider0;
 	float fRec0[2];
 	int IOTA0;
-	float fVec0[2048];
+	float fVec0[4096];
 	int fSampleRate;
 	
 	mydsp() {
@@ -10378,7 +10378,7 @@ struct mydsp : public dsp {
 			fRec0[l0] = 0.0f;
 		}
 		IOTA0 = 0;
-		for (int l1 = 0; l1 < 2048; l1 = l1 + 1) {
+		for (int l1 = 0; l1 < 4096; l1 = l1 + 1) {
 			fVec0[l1] = 0.0f;
 		}
 	}
@@ -10411,18 +10411,18 @@ struct mydsp : public dsp {
 	virtual void compute(int count, FAUSTFLOAT** RESTRICT inputs, FAUSTFLOAT** RESTRICT outputs) {
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* output0 = outputs[0];
-		float fSlow0 = std::pow(2.0f, 0.083333336f * static_cast<float>(fHslider0));
+		float fSlow0 = std::pow(2.0f, 1.442695f * std::log(static_cast<float>(fHslider0)));
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			fRec0[0] = std::fmod(fRec0[1] + 2057.0f - fSlow0, 2056.0f);
-			float fTemp0 = std::min<float>(0.0009765625f * fRec0[0], 1.0f);
-			float fTemp1 = fRec0[0] + 2056.0f;
+			fRec0[0] = std::fmod(fRec0[1] + 2049.0f - fSlow0, 2048.0f);
+			float fTemp0 = std::min<float>(0.1f * fRec0[0], 1.0f);
+			float fTemp1 = fRec0[0] + 2048.0f;
 			float fTemp2 = std::floor(fTemp1);
 			float fTemp3 = static_cast<float>(input0[i0]);
-			fVec0[IOTA0 & 2047] = fTemp3;
+			fVec0[IOTA0 & 4095] = fTemp3;
 			int iTemp4 = static_cast<int>(fTemp1);
 			int iTemp5 = static_cast<int>(fRec0[0]);
 			float fTemp6 = std::floor(fRec0[0]);
-			output0[i0] = static_cast<FAUSTFLOAT>((fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp5))) & 2047] * (fTemp6 + (1.0f - fRec0[0])) + (fRec0[0] - fTemp6) * fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp5 + 1))) & 2047]) * fTemp0 + (fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp4))) & 2047] * (fTemp2 + (-2055.0f - fRec0[0])) + fVec0[(IOTA0 - std::min<int>(1025, std::max<int>(0, iTemp4 + 1))) & 2047] * (fRec0[0] + (2056.0f - fTemp2))) * (1.0f - fTemp0));
+			output0[i0] = static_cast<FAUSTFLOAT>((fVec0[(IOTA0 - std::min<int>(2049, std::max<int>(0, iTemp5))) & 4095] * (fTemp6 + (1.0f - fRec0[0])) + (fRec0[0] - fTemp6) * fVec0[(IOTA0 - std::min<int>(2049, std::max<int>(0, iTemp5 + 1))) & 4095]) * fTemp0 + (fVec0[(IOTA0 - std::min<int>(2049, std::max<int>(0, iTemp4))) & 4095] * (fTemp2 + (-2047.0f - fRec0[0])) + fVec0[(IOTA0 - std::min<int>(2049, std::max<int>(0, iTemp4 + 1))) & 4095] * (fRec0[0] + (2048.0f - fTemp2))) * (1.0f - fTemp0));
 			fRec0[1] = fRec0[0];
 			IOTA0 = IOTA0 + 1;
 		}
