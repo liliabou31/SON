@@ -32,30 +32,6 @@ AudioConnection          patch10(amp1, 0, mixer2, 0);
 AudioConnection          patch11(mixer2, 0, i2s2, 0);
 AudioConnection          patch12(mixer2, 0, i2s2, 1);
 
-// Sortie PC
-
-// AudioInputUSB            usbIn;
-// AudioMixer4              mixer1;
-// AudioEffectGranular      granular1;
-// AudioAnalyzeNoteFrequency notefreq1;
-// AudioAmplifier           amp1;
-// AudioOutputUSB           usbOut;
-// AudioEffectDelay         delay1 ;
-// AudioMixer4              mixer2; 
-
-// AudioConnection          patchCord1(usbIn, 0, mixer1, 0); // PC → Teensy (L)
-// AudioConnection          patchCord2(usbIn, 1, mixer1, 1); // PC → Teensy (R)
-// AudioConnection          patchCord3(mixer1, granular1); // vers pitch shift
-// AudioConnection          patchCord4(mixer1, notefreq1); // vers analyse pitch
-// AudioConnection          patchCord5(granular1, amp1);
-// // AudioConnection          patchCord6(amp1, 0, i2s2, 0); // Teensy → PC (L)
-// // AudioConnection          patchCord7(amp1, 0, i2s2, 1); // Teensy → PC (R)
-// AudioConnection          patchCord8(amp1, 0, delay1, 0); 
-// AudioConnection          patchCord9(delay1, 0, mixer2, 1);
-// AudioConnection          patchCord10(amp1, 0, mixer2, 0);
-// AudioConnection          patchCord11(mixer2, 0, usbOut, 0);
-// AudioConnection          patchCord12(mixer2, 0, usbOut, 1);
-
 AudioControlSGTL5000     sgtl5000_1; // "pont de communication" entre le code et la puce physique
 
 // Granular memory
@@ -141,25 +117,10 @@ void loop() {
 
   Autotune.setParamValue("ratio", f_ratio_cible);
 
-  // Debug
-  //Serial.print("Mesurée: ");
-  //Serial.print(f_mes);
-  //Serial.print(" | Cible: ");
-  //Serial.print(f_des);
-  //Serial.print(" | Ratio: ");
-  //Serial.println(f_ratio);
-  //if (cpt == 0)
-  //{
-    Serial.print(f_mes);
-    Serial.print(",");
-    Serial.println(f_des);
-  // }
-  // if (cpt == 9)
-  // {
-  //   cpt = 0;
-  // }
-  // else{
-  //   cpt = cpt + 1;
-  // }
+
+  Serial.print(f_mes);
+  Serial.print(",");
+  Serial.println(f_des);
+
   delay(1);
 }
