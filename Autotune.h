@@ -22,8 +22,8 @@
  
  ************************************************************************/
 
-#ifndef faust_Autotune_h_
-#define faust_Autotune_h_
+#ifndef faust_Autotune_final_h_
+#define faust_Autotune_final_h_
 
 #include <string>
 
@@ -41,12 +41,12 @@ class MidiUI;
 class teensy_midi;
 #endif
 
-class Autotune : public AudioStream
+class Autotune_final : public AudioStream
 {
     public:
     
-        Autotune();
-        ~Autotune();
+        Autotune_final();
+        ~Autotune_final();
     
         virtual void update(void);
     
